@@ -14,9 +14,10 @@ int turno = 0;
 char player1[20] = "Jugador 1";
 char player2[20] = "Jugador 2";
 
-char tablero[3][3];
+int tablero[3][3];
 const int espacios = 3;
-char tipo = '0';
+int tipo_init = 0;
+
 
 //Botones
 //Button constants
@@ -24,13 +25,25 @@ const int BUTTON_WIDTH = 199;
 const int BUTTON_HEIGHT = 199;
 const int TOTAL_BUTTONS = 9;
 
+//MEtodos del Juego
+void initVariables();
+bool esGanador(int tipo);
+int registraEspacio(int x, int y);
+bool estaVacio(int x, int y);
+void muestraGanador();
+
+
 enum LButtonSprite
 {
-    BUTTON_SPRITE_MOUSE_OUT = 0,
+    /*BUTTON_SPRITE_MOUSE_OUT = 0,
     BUTTON_SPRITE_MOUSE_OVER_MOTION = 1,
     BUTTON_SPRITE_MOUSE_DOWN = 2,
     BUTTON_SPRITE_MOUSE_UP = 3,
-    BUTTON_SPRITE_TOTAL = 4
+    BUTTON_SPRITE_TOTAL = 4*/
+    BUTTON_SPRITE_NORMAL = 0,
+    BUTTON_SPRITE_X = 1,
+    BUTTON_SPRITE_0 = 2,
+    BUTTON_SPRITE_TOTAL = 3
 };
 
 
@@ -93,6 +106,9 @@ class LButton
         //Handles mouse event
         void handleEvent( SDL_Event* e );
 
+        //Set Coordenadas
+        void setLugar(int x, int y);
+
         //Shows button sprite
         void render();
 
@@ -102,6 +118,9 @@ class LButton
 
         //Currently used global sprite
         LButtonSprite mCurrentSprite;
+        //Saber que ID le corresponde
+        int mX;
+        int mY;
 };
 
 
@@ -280,8 +299,9 @@ LButton::LButton()
 {
 	mPosition.x = 0;
 	mPosition.y = 0;
-
-	mCurrentSprite = BUTTON_SPRITE_MOUSE_OUT;
+	mX =0;
+	mY =0;
+	mCurrentSprite = BUTTON_SPRITE_NORMAL;
 }
 
 
@@ -292,6 +312,11 @@ void LButton::setPosition( int x, int y )
 	mPosition.y = y;
 }
 
+void LButton::setLugar(int x,int y)
+{
+	mX = x;
+	mY = y;
+}
 
 void LButton::handleEvent( SDL_Event* e )
 {
@@ -329,7 +354,7 @@ void LButton::handleEvent( SDL_Event* e )
 		//Mouse is outside button
 		if( !inside )
 		{
-			mCurrentSprite = BUTTON_SPRITE_MOUSE_OUT;
+			//mCurrentSprite = BUTTON_SPRITE_NORMAL;
 		}
 		//Mouse is inside button
 		else
@@ -342,7 +367,7 @@ void LButton::handleEvent( SDL_Event* e )
                 //TODO: Incrementar turno
 
 
-				case SDL_MOUSEMOTION:
+				/*case SDL_MOUSEMOTION:
 				mCurrentSprite = BUTTON_SPRITE_MOUSE_OVER_MOTION;
 				break;
 
@@ -352,6 +377,21 @@ void LButton::handleEvent( SDL_Event* e )
 
 				case SDL_MOUSEBUTTONUP:
 				mCurrentSprite = BUTTON_SPRITE_MOUSE_UP;
+				break;*/
+
+				case SDL_MOUSEBUTTONUP:
+                    //printf("%i",e->button.button);
+                    if(e->button.button ==  SDL_BUTTON_LEFT)
+                    {
+                        int t = registraEspacio(mX,mY);
+                        if(t == 1)
+                            mCurrentSprite = BUTTON_SPRITE_X;
+                        else if(t == 2 )
+                            mCurrentSprite = BUTTON_SPRITE_0;
+				    //printf("windowID %i",e->windowID);
+				    //printf("ID BOTON = %i", mX);
+				    //printf("ID BOTON = %i", mX);
+                    }
 				break;
 			}
 		}
@@ -367,12 +407,6 @@ void LButton::render()
 
 //--------------------- JUEGO ------------
 
-//MEtodos del Juego
-void initVariables();
-bool esGanador(char tipo);
-void registraEspacio(char tipo,int x, int y);
-bool estaVacio(int x, int y);
-void muestraGanador();
 
 void initVariables()
 {
@@ -381,8 +415,9 @@ void initVariables()
    for(i=0;i<espacios;i++)
    {
        for(j=0;j<espacios;j++)
-            tablero[i][j] = '0';
+            tablero[i][j] = tipo_init;
    }
+
 }
 
 //REvisar los 4 casos de ganar
@@ -390,13 +425,36 @@ bool esGanador(int tipo)
 {
     return false;
 }
-void registraEspacio(char tipo,int x, int y)
-{
 
+int registraEspacio(int x, int y)
+{
+    if(turno == 2 || turno == 0)
+        turno = 1;
+    else if(turno == 1)
+        turno = 2;
+
+    if(estaVacio(x,y))
+    {
+        tablero[x][y] = turno;
+
+        printf("----------------------\n");
+        for(int i = 0; i<espacios;i++)
+        {
+            for(int j = 0; j<espacios;j++)
+            {
+                printf("%i  ",tablero[i][j]);
+            }
+            printf("\n");
+        }
+        return turno;
+    }
+    return 0;
 }
 
 bool estaVacio(int x, int y)
 {
+    if(tablero[x][y] == 0)
+        return true;
     return false;
 }
 
@@ -472,17 +530,17 @@ bool loadMedia()
 	bool success = true;
 
 	//Load PNG texture
-	gTexture = loadTexture( "images/x.png" );
+	/*gTexture = loadTexture( "images/x.png" );
 	if( gTexture == NULL )
 	{
 		printf( "Failed to load texture image!\n" );
 		success = false;
-	}
+	}*/
 
 
 
 	//Load sprites
-	if( !gButtonSpriteSheetTexture.loadFromFile( "images/button.png" ) )
+	if( !gButtonSpriteSheetTexture.loadFromFile( "images/textura.png" ) )
 	{
 		printf( "Failed to load button sprite texture!\n" );
 		success = false;
@@ -511,6 +569,17 @@ bool loadMedia()
 		gButtons[ 6 ].setPosition( 0, 402 );
 		gButtons[ 7 ].setPosition( 201, 402);
 		gButtons[ 8 ].setPosition( 402, 402 );
+
+
+		gButtons[ 0 ].setLugar(0,0);
+		gButtons[ 1 ].setLugar(0,1);
+		gButtons[ 2 ].setLugar(0,2);
+		gButtons[ 3 ].setLugar(1,0);
+		gButtons[ 4 ].setLugar(1,1);
+		gButtons[ 5 ].setLugar(1,2);
+		gButtons[ 6 ].setLugar(2,0);
+		gButtons[ 7 ].setLugar(2,1);
+		gButtons[ 8 ].setLugar(2,2);
 	}
 
 	return success;
@@ -576,6 +645,9 @@ int main( int argc, char* args[] )
 		}
 		else
 		{
+		    //Carga Variables de Juego
+		    initVariables();
+
 			//Main loop flag
 			bool quit = false;
 
